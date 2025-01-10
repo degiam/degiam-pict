@@ -1,34 +1,72 @@
-import { createSignal } from 'solid-js'
-import solidLogo from './assets/solid.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { createSignal, onCleanup, onMount } from 'solid-js'
+import Picture from "./components/picture"
 
 function App() {
-  const [count, setCount] = createSignal(0)
+  const [isStandalone, setIsStandalone] = createSignal<boolean>(false)
+  const [isMobile, setIsMobile] = createSignal<boolean>(false)
+
+  const updateTheme = (isDarkMode: boolean) => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
+  }
+
+  onMount(() => {
+    const handleThemeChange = (event: MessageEvent) => {
+      if (event.data?.type === "theme-change") {
+        updateTheme(event.data.isDarkMode)
+      }
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleMediaChange = (event: MediaQueryListEvent) => {
+      updateTheme(event.matches)
+    }
+
+    updateTheme(mediaQuery.matches)
+
+    window.addEventListener("message", handleThemeChange)
+    mediaQuery.addEventListener("change", handleMediaChange)
+
+    window.parent.postMessage({ type: "iframe-ready" }, "*")
+
+    onCleanup(() => {
+      window.removeEventListener("message", handleThemeChange)
+      mediaQuery.removeEventListener("change", handleMediaChange)
+    })
+  })
+
+  onMount(() => {
+    const handleScreenSizeMessage = (event: MessageEvent) => {
+      if (event.data?.type === "screen-size") {
+        setIsStandalone(true)
+        setIsMobile(event.data.isMobile)
+      }
+    }
+
+    window.addEventListener("message", handleScreenSizeMessage)
+
+    onCleanup(() => {
+      window.removeEventListener("message", handleScreenSizeMessage)
+    })
+  })
+
+  const mainClass = (): string => {
+    if (isStandalone()) {
+      return isMobile()
+        ? "[&_.main-layout]:max-md:pb-24"
+        : "[&_.main-layout]:md:pt-24"
+    }
+    return ""
+  }
 
   return (
-    <>
-      <div class='flex items-center justify-center scale-150'>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} class="logo" alt="Vite logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={solidLogo} class="logo solid" alt="Solid logo" />
-        </a>
-      </div>
-      <h1>Vite + Solid</h1>
-      <div class="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count()}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p class="read-the-docs">
-        Click on the Vite and Solid logos to learn more
-      </p>
-    </>
+    <main class={mainClass()}>
+      <h1 class="sr-only">KiePict by Degiam</h1>
+      <Picture />
+    </main>
   )
 }
 
