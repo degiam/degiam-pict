@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import Picture from "./components/picture"
+import Editor from "./components/editor"
 
 function App() {
   const [isStandalone, setIsStandalone] = createSignal<boolean>(false)
@@ -65,7 +65,7 @@ function App() {
   return (
     <main class={mainClass()}>
       <h1 class="sr-only">KiePict by Degiam</h1>
-      <Picture />
+      <Editor />
     </main>
   )
 }
