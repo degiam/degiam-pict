@@ -1,5 +1,7 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import Editor from "./components/editor"
+import Dropzone from "./components/dropzone"
+import Compress from "./components/compress"
+import Convert from "./components/convert"
 
 function App() {
   const [isStandalone, setIsStandalone] = createSignal<boolean>(false)
@@ -65,7 +67,10 @@ function App() {
   return (
     <main class={mainClass()}>
       <h1 class="sr-only">KiePict by Degiam</h1>
-      <Editor />
+      <Dropzone>
+        <Compress />
+        <Convert />
+      </Dropzone>
     </main>
   )
 }
