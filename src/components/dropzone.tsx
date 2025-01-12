@@ -234,8 +234,8 @@ function Dropzone(props: DropzoneProps) {
           </div>
         </Show>
 
-        <div class="w-full mt-8">
-          {uploadedFiles().length > 0 && (
+        {uploadedFiles().length > 0 && (
+          <div class="w-full mt-8">
             <ul class="mb-8">
               {uploadedFiles().map((file) => (
                 <li class="flex justify-between items-center gap-6 py-3 border-b border-slate-200 dark:border-slate-700 last:border-0">
@@ -278,11 +278,13 @@ function Dropzone(props: DropzoneProps) {
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
 
-        <Show when={activeMode() === "compress"}>{props.children?.[0]}</Show>
-        <Show when={activeMode() === "convert"}>{props.children?.[1]}</Show>
+        <div class="mt-8">
+          <Show when={activeMode() === "compress"}>{props.children?.[0]}</Show>
+          <Show when={activeMode() === "convert"}>{props.children?.[1]}</Show>
+        </div>
 
         <Built />
       </section>
