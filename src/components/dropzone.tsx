@@ -97,7 +97,7 @@ function Dropzone(props: DropzoneProps) {
 
     setErrorFile(errors)
     if (errors.length > 0) {
-      setTimeout(() => setIsFadingOut(true), 9500);
+      setTimeout(() => setIsFadingOut(true), 9500)
       setTimeout(() => setErrorFile([]), 10000)
     }
   }
@@ -151,7 +151,7 @@ function Dropzone(props: DropzoneProps) {
               : ""
           }`}
         >
-          <h2 class="text-4xl font-bold text-cyan-500">Letakkan Gambar Disini</h2>
+          <h2 class="text-4xl font-bold text-cyan-500 text-center">Letakkan Gambar Disini</h2>
         </div>
       </section>
 
@@ -238,7 +238,7 @@ function Dropzone(props: DropzoneProps) {
           <div class="w-full mt-8">
             <ul class="mb-8">
               {uploadedFiles().map((file) => (
-                <li class="flex justify-between items-center gap-6 py-3 border-b border-slate-200 dark:border-slate-700 last:border-0">
+                <li class="flex justify-between items-center gap-6 py-3 break-word border-b border-slate-200 dark:border-slate-700 last:border-0">
                   <div class="flex items-center gap-2">
                     <img
                       src={URL.createObjectURL(file)}

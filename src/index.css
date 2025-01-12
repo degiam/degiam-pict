@@ -15,3 +15,9 @@
     @apply text-transparent;
   }
 }
+
+@layer utilities {
+  .break-word {
+    word-break: break-word;
+  }
+}
