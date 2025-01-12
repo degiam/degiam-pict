@@ -1,4 +1,4 @@
-import { createSignal, JSX, Show } from "solid-js"
+import { createEffect, createSignal, JSX, onCleanup, Show } from "solid-js"
 import formatFileSize from "../utils/formatFileSize"
 import formatMessage from "../utils/formatMessage"
 import Brand from "./brand"
@@ -6,13 +6,14 @@ import Built from "./built"
 
 type DropzoneProps = {
   children?: JSX.Element[];
+  uploadedFiles: File[];
+  setUploadedFiles: (files: File[]) => void;
 }
 
 function Dropzone(props: DropzoneProps) {
-  const [uploadedFiles, setUploadedFiles] = createSignal<File[]>([])
   const [isDragActive, setIsDragActive] = createSignal(false)
   const [activeMode, setActiveMode] = createSignal<"compress" | "convert">("compress")
-  const [errorFile, setErrorFile] = createSignal<string[]>([])
+  const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([]);
   const [isFadingOut, setIsFadingOut] = createSignal(false)
   let dragCounter = 0
   let fileInputRef: HTMLInputElement | undefined
@@ -72,7 +73,7 @@ function Dropzone(props: DropzoneProps) {
         file.type.startsWith("image/") &&
         isImage(file) &&
         isValid &&
-        !uploadedFiles().some((uploaded) => uploaded.name === file.name)
+        !props.uploadedFiles.some((uploaded) => uploaded.name === file.name)
       ) {
         validFiles.push(file)
       } else {
@@ -84,23 +85,35 @@ function Dropzone(props: DropzoneProps) {
           errors.push(`Ekstensi tidak didukung untuk *${file.name}*`)
         } else if (!isValid) {
           errors.push(`*${file.name}* bukan gambar yang valid`)
-        } else if (uploadedFiles().some((uploaded) => uploaded.name === file.name)) {
+        } else if (props.uploadedFiles.some((uploaded) => uploaded.name === file.name)) {
           errors.push(`*${file.name}* sudah diunggah`)
         } else {
           errors.push(`*${file.name}* tidak valid`)
         }
       }
     }
-    setUploadedFiles((prev) => [...prev, ...validFiles])
+    props.setUploadedFiles([...props.uploadedFiles, ...validFiles])
     setIsDragActive(false)
     dragCounter = 0
 
-    setErrorFile(errors)
     if (errors.length > 0) {
-      setTimeout(() => setIsFadingOut(true), 9500)
-      setTimeout(() => setErrorFile([]), 10000)
+      const currentTime = Date.now();
+      const newErrors = errors.map((error) => ({
+        message: error,
+        timeout: currentTime + 10000,
+      }));
+      setErrorFile([...errorFile(), ...newErrors]);
     }
   }
+
+  createEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      setErrorFile((prev) => prev.filter((error: any) => error.timeout > currentTime));
+    }, 1000);
+  
+    onCleanup(() => clearInterval(interval));
+  });
   
   window.addEventListener("dragend", () => {
     dragCounter = 0
@@ -108,7 +121,7 @@ function Dropzone(props: DropzoneProps) {
   })
 
   const handleRemoveFile = (fileToRemove: File) => {
-    setUploadedFiles((prev) => prev.filter((file) => file.name !== fileToRemove.name))
+    props.setUploadedFiles(props.uploadedFiles.filter((file) => file.name !== fileToRemove.name))
   }
 
   return (
@@ -155,7 +168,7 @@ function Dropzone(props: DropzoneProps) {
         </div>
       </section>
 
-      <section class={`w-full max-w-lg ${uploadedFiles().length < 1 ? "mb-20" : ""}`}>
+      <section class={`w-full max-w-lg ${props.uploadedFiles.length < 1 ? "mb-20" : ""}`}>
         <div class="w-fit mx-auto mb-4">
           <Brand />
         </div>
@@ -226,18 +239,22 @@ function Dropzone(props: DropzoneProps) {
           <div class={`mt-8 -mb-3 p-4 bg-red-100 text-red-700 rounded-lg text-sm transition duration-500 ${
             isFadingOut() ? "opacity-0 -translate-y-4" : "opacity-100 -translate-y-0"
           }`}>
-            <ul class="list-disc pl-4">
-              {errorFile().map((error) => (
-                <li innerHTML={formatMessage(error)} />
-              ))}
-            </ul>
+            {errorFile().length > 1 ?
+              <ul class="list-disc pl-4">
+                {errorFile().map((error) => (
+                  <li class="break-word" innerHTML={formatMessage(error.message)} />
+                ))}
+              </ul>
+            :
+              <p class="break-word" innerHTML={formatMessage(errorFile()[0].message)} />
+            }
           </div>
         </Show>
 
-        {uploadedFiles().length > 0 && (
+        {props.uploadedFiles.length > 0 && (
           <div class="w-full mt-8">
             <ul class="mb-8">
-              {uploadedFiles().map((file) => (
+              {props.uploadedFiles.map((file) => (
                 <li class="flex justify-between items-center gap-6 py-3 break-word border-b border-slate-200 dark:border-slate-700 last:border-0">
                   <div class="flex items-center gap-2">
                     <img

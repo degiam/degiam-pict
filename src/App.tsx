@@ -64,12 +64,14 @@ function App() {
     return ""
   }
 
+  const [uploadedFiles, setUploadedFiles] = createSignal<File[]>([])
+
   return (
     <main class={mainClass()}>
       <h1 class="sr-only">KiePict by Degiam</h1>
-      <Dropzone>
-        <Compress />
-        <Convert />
+      <Dropzone uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles}>
+        <Compress uploadedFiles={uploadedFiles()} />
+        <Convert uploadedFiles={uploadedFiles()} />
       </Dropzone>
     </main>
   )
