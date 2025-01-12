@@ -1,5 +1,6 @@
 import { createSignal, JSX, Show } from "solid-js"
 import formatFileSize from "../utils/formatFileSize"
+import formatMessage from "../utils/formatMessage"
 import Brand from "./brand"
 import Built from "./built"
 
@@ -11,26 +12,100 @@ function Dropzone(props: DropzoneProps) {
   const [uploadedFiles, setUploadedFiles] = createSignal<File[]>([])
   const [isDragActive, setIsDragActive] = createSignal(false)
   const [activeMode, setActiveMode] = createSignal<"compress" | "convert">("compress")
+  const [errorFile, setErrorFile] = createSignal<string[]>([])
+  const [isFadingOut, setIsFadingOut] = createSignal(false)
   let dragCounter = 0
   let fileInputRef: HTMLInputElement | undefined
 
-  const handleDrop = (files: File[]) => {
-    const validFiles = files.filter(
-      (file) =>
+  const validImageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "tiff"]
+  const isImage = (file: File) => {
+    const fileExtension = file.name.split(".").pop()?.toLowerCase()
+    return validImageExtensions.includes(fileExtension || "")
+  }
+
+  const isValidImage = async (file: File) => {
+    return new Promise<boolean>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const arr = new Uint8Array(reader.result as ArrayBuffer)
+        const header = arr.subarray(0, 4).reduce((acc, byte) => acc + byte.toString(16), "")
+
+        const validHeaders = [
+          "ffd8",     // JPEG
+          "89504e47", // PNG
+          "47494638", // GIF
+          "424d",     // BMP
+          "49492a00", // TIFF (little-endian)
+          "4d4d002a", // TIFF (big-endian)
+        ]
+
+        const isValidHeader = validHeaders.some((valid) => header.startsWith(valid))
+
+        if (!isValidHeader) {
+          if (header === "52494646") {
+            const type = arr.subarray(8, 12).reduce((acc, byte) => acc + String.fromCharCode(byte), "")
+            if (type === "WEBP" || type === "avif") {
+              resolve(true)
+              return
+            }
+          }
+          resolve(false)
+        } else {
+          resolve(true)
+        }
+      }
+      reader.onerror = () => resolve(false)
+      reader.readAsArrayBuffer(file.slice(0, 12))
+    })
+  }
+
+  const handleDrop = async (files: File[]) => {
+    setErrorFile([])
+    setIsFadingOut(false)
+    const validFiles: File[] = []
+    const errors: string[] = []
+
+    for (const file of files) {
+      const isValid = await isValidImage(file)
+      if (
         file.size > 0 &&
-        file.type !== "" &&
+        file.type.startsWith("image/") &&
+        isImage(file) &&
+        isValid &&
         !uploadedFiles().some((uploaded) => uploaded.name === file.name)
-    )
+      ) {
+        validFiles.push(file)
+      } else {
+        if (file.size === 0) {
+          errors.push(`*${file.name}* bukan file yang valid`)
+        } else if (!file.type.startsWith("image/")) {
+          errors.push(`*${file.name}* bukan file gambar`)
+        } else if (!isImage(file)) {
+          errors.push(`Ekstensi tidak didukung untuk *${file.name}*`)
+        } else if (!isValid) {
+          errors.push(`*${file.name}* bukan gambar yang valid`)
+        } else if (uploadedFiles().some((uploaded) => uploaded.name === file.name)) {
+          errors.push(`*${file.name}* sudah diunggah`)
+        } else {
+          errors.push(`*${file.name}* tidak valid`)
+        }
+      }
+    }
     setUploadedFiles((prev) => [...prev, ...validFiles])
     setIsDragActive(false)
     dragCounter = 0
+
+    setErrorFile(errors)
+    if (errors.length > 0) {
+      setTimeout(() => setIsFadingOut(true), 9500);
+      setTimeout(() => setErrorFile([]), 10000)
+    }
   }
   
   window.addEventListener("dragend", () => {
     dragCounter = 0
     setIsDragActive(false)
   })
-  
 
   const handleRemoveFile = (fileToRemove: File) => {
     setUploadedFiles((prev) => prev.filter((file) => file.name !== fileToRemove.name))
@@ -53,7 +128,6 @@ function Dropzone(props: DropzoneProps) {
           setIsDragActive(false)
         }
       }}
-      
     >
       <section
         class={`fixed top-0 left-0 w-full h-full p-8 transition ${
@@ -81,7 +155,7 @@ function Dropzone(props: DropzoneProps) {
         </div>
       </section>
 
-      <section class="w-full max-w-lg mb-20">
+      <section class={`w-full max-w-lg ${uploadedFiles().length < 1 ? "mb-20" : ""}`}>
         <div class="w-fit mx-auto mb-4">
           <Brand />
         </div>
@@ -90,7 +164,7 @@ function Dropzone(props: DropzoneProps) {
           <button
             type="button"
             onClick={() => setActiveMode("compress")}
-            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
+            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:dark:hover:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
               activeMode() === "compress"
                 ? "active"
                 : ""
@@ -101,7 +175,7 @@ function Dropzone(props: DropzoneProps) {
           <button
             type="button"
             onClick={() => setActiveMode("convert")}
-            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
+            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:dark:hover:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
               activeMode() === "convert"
                 ? "active"
                 : ""
@@ -148,6 +222,18 @@ function Dropzone(props: DropzoneProps) {
           </div>
         </div>
 
+        <Show when={errorFile().length > 0}>
+          <div class={`mt-8 -mb-3 p-4 bg-red-100 text-red-700 rounded-lg text-sm transition duration-500 ${
+            isFadingOut() ? "opacity-0 -translate-y-4" : "opacity-100 -translate-y-0"
+          }`}>
+            <ul class="list-disc pl-4">
+              {errorFile().map((error) => (
+                <li innerHTML={formatMessage(error)} />
+              ))}
+            </ul>
+          </div>
+        </Show>
+
         <div class="w-full mt-8">
           {uploadedFiles().length > 0 && (
             <ul class="mb-8">
@@ -157,7 +243,7 @@ function Dropzone(props: DropzoneProps) {
                     <img
                       src={URL.createObjectURL(file)}
                       alt={file.name}
-                      class="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                      class="w-10 h-10 aspect-square object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
                     />
                     <span class="text-sm text-slate-700 dark:text-white">{file.name}</span>
                   </div>
