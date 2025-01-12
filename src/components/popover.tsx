@@ -22,7 +22,7 @@ const Popover = (props: PopoverProps) => {
       screenWidth - maxPopoverWidth - popoverPadding
     )
     const y = Math.min(
-      clientY + 80,
+      clientY + 65,
       screenHeight - popoverPadding
     )
 
@@ -47,7 +47,7 @@ const Popover = (props: PopoverProps) => {
       {props.children}
       {isVisible() && (
         <div
-          class="absolute bg-black text-white px-4 py-3 text-sm rounded-xl z-10 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 max-w-[200px] break-word after:content-[''] after:absolute after:-top-3.5 after:left-1/2 after:transform after:-translate-x-1/2 after:w-0 after:h-0 after:border-8 after:border-t-transparent after:border-x-transparent after:border-b-black"
+          class="absolute bg-black text-white px-4 py-3 text-center text-xs rounded-xl z-10 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 max-w-[210px] break-word after:content-[''] after:absolute after:-top-3.5 after:left-1/2 after:transform after:-translate-x-1/2 after:w-0 after:h-0 after:border-8 after:border-t-transparent after:border-x-transparent after:border-b-black"
           style={{
             top: `${position().y}px`,
             left: `${position().x}px`,

@@ -171,7 +171,7 @@ function Dropzone(props: DropzoneProps) {
 
       <section class={`w-full max-w-lg ${props.uploadedFiles.length < 1 ? "mb-20" : ""}`}>
         <div class="w-fit mx-auto mb-4">
-          <Popover content="Kompres gambar biar file size lebih kecil, tapi tetap mempertahankan kualitasnya.">
+          <Popover content="Kompresi dan konversi gambar secepat kilat tanpa instal Photoshop">
             <Brand />
           </Popover>
         </div>
