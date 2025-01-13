@@ -70,8 +70,8 @@ function App() {
     <main class={mainClass()}>
       <h1 class="sr-only">KiePict by Degiam</h1>
       <Dropzone uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles}>
-        <Compress uploadedFiles={uploadedFiles()} />
-        <Convert uploadedFiles={uploadedFiles()} />
+        <Convert uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
+        <Compress uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
       </Dropzone>
     </main>
   )
