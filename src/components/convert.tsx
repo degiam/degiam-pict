@@ -1,5 +1,6 @@
 import { createSignal, createEffect, onCleanup, Show } from "solid-js"
 import formatMessage from "../utils/formatMessage"
+import Zip from "./zip"
 
 type ConvertProps = {
   uploadedFiles: File[];
@@ -9,14 +10,17 @@ type ConvertProps = {
 function Convert(props: ConvertProps) {
   const [format, setFormat] = createSignal<string>("jpg")
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
+  const [convertedFiles, setConvertedFiles] = createSignal<{ file: File; format: string }[]>([])
 
   const handleFormatChange = (e: Event) => {
     const select = e.target as HTMLSelectElement
     const value = select.value === "jpeg" ? "jpg" : select.value
     setFormat(value)
+    setConvertedFiles([])
   }  
 
-  const convertImage = (file: File) => {
+  const convertImage = (file: File, downloadAll: boolean = false) => {
+    const selectedFormat = format()
     const reader = new FileReader()
 
     reader.onload = () => {
@@ -31,14 +35,38 @@ function Convert(props: ConvertProps) {
         canvas.height = img.height
         ctx.drawImage(img, 0, 0)
 
-        const selectedFormat = format()
         const originalName = file.name.slice(0, file.name.lastIndexOf("."))
         const finalFileName = `${originalName}.${selectedFormat}`
 
-        const link = document.createElement("a")
-        link.href = canvas.toDataURL(`image/${selectedFormat}`)
-        link.download = finalFileName
-        link.click()
+        const base64DataUrl = canvas.toDataURL(`image/${selectedFormat}`)
+        const base64Data = base64DataUrl.split(",")[1]
+
+        const byteString = atob(base64Data)
+        const ab = new ArrayBuffer(byteString.length)
+        const ia = new Uint8Array(ab)
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i)
+        }
+
+        const blob = new Blob([ia], { type: `image/${selectedFormat}` })
+
+        if (downloadAll) {
+          const convertedFile = new File([blob], finalFileName, { type: `image/${selectedFormat}` })
+
+          const isDuplicate = convertedFiles().some(
+            (item) => item.file.name === convertedFile.name
+          )
+
+          if (!isDuplicate) {
+            setConvertedFiles((prev) => [...prev, { file: convertedFile, format: selectedFormat }])
+          }
+        } else {
+          const link = document.createElement("a")
+          link.href = URL.createObjectURL(blob)
+          link.download = finalFileName
+          link.click()
+          URL.revokeObjectURL(link.href)
+        }
       }
 
       img.onerror = () => {
@@ -62,14 +90,6 @@ function Convert(props: ConvertProps) {
   }
 
   createEffect(() => {
-    return () => {
-      props.uploadedFiles.forEach((file) => URL.revokeObjectURL(URL.createObjectURL(file)))
-    }
-  })  
-
-  createEffect(() => {
-    // console.log(props.uploadedFiles)
-
     const interval = setInterval(() => {
       const currentTime = Date.now()
       setErrorFile((prev) => prev.filter((error: any) => error.timeout > currentTime))
@@ -84,7 +104,12 @@ function Convert(props: ConvertProps) {
     }, 5000)
     return () => clearTimeout(timeout)
   })
-  
+
+  createEffect(() => {
+    props.uploadedFiles.forEach((file) => {
+      convertImage(file, true)
+    })
+  })
 
   return (
     <>
@@ -131,7 +156,7 @@ function Convert(props: ConvertProps) {
                       <img
                         src={URL.createObjectURL(file)}
                         alt={file.name}
-                        class="w-10 h-10 aspect-square object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                        class="w-10 h-10 aspect-square object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100"
                       />
                       <span class="text-sm text-slate-700 dark:text-white">{displayedFileName}</span>
                     </div>
@@ -165,6 +190,8 @@ function Convert(props: ConvertProps) {
               })}
             </ul>
           </div>
+
+          <Zip converted={convertedFiles()} />
         </>
       )}
     </>
