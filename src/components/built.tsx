@@ -36,6 +36,6 @@ const Built = () => {
       <span>Solid</span>
     </div>
   )
-};
+}
 
-export default Built;
+export default Built
