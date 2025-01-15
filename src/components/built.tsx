@@ -38,7 +38,7 @@ const Built = () => {
       </div>
 
       <div class="text-slate-400/60 dark:text-slate-600 hover:text-black dark:hover:text-white transition underline hover:no-underline">
-        <a href="https://github.com/degiam/degiam-zip" target="_blank" rel="noopener noreferrer">Fork at GitHub</a>
+        <a href="https://github.com/degiam/degiam-pict" target="_blank" rel="noopener noreferrer">Fork at GitHub</a>
       </div>
     </section>
   )

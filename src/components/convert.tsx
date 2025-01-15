@@ -10,14 +10,14 @@ type ConvertProps = {
 function Convert(props: ConvertProps) {
   const [format, setFormat] = createSignal<string>("jpg")
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
-  const [convertedFiles, setConvertedFiles] = createSignal<{ file: File; format: string }[]>([])
+  const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string }[]>([])
 
   const handleFormatChange = (e: Event) => {
     const select = e.target as HTMLSelectElement
     const value = select.value === "jpeg" ? "jpg" : select.value
     setFormat(value)
-    setConvertedFiles([])
-  }  
+    setZipFiles([])
+  }
 
   const convertImage = (file: File, downloadAll: boolean = false) => {
     const selectedFormat = format()
@@ -53,12 +53,12 @@ function Convert(props: ConvertProps) {
         if (downloadAll) {
           const convertedFile = new File([blob], finalFileName, { type: `image/${selectedFormat}` })
 
-          const isDuplicate = convertedFiles().some(
+          const isDuplicate = zipFiles().some(
             (item) => item.file.name === convertedFile.name
           )
 
           if (!isDuplicate) {
-            setConvertedFiles((prev) => [...prev, { file: convertedFile, format: selectedFormat }])
+            setZipFiles((prev) => [...prev, { file: convertedFile, format: selectedFormat }])
           }
         } else {
           const link = document.createElement("a")
@@ -113,7 +113,7 @@ function Convert(props: ConvertProps) {
 
   return (
     <>
-      {props.uploadedFiles.length > 0 && (
+      {props.uploadedFiles.length > 0 &&
         <>
           <Show when={errorFile().length > 0}>
             <div class="fixed top-0 right-0 z-10 m-4 md:m-8 px-4 py-3 md:px-5 md:py-4 rounded-lg md:rounded-xl shadow-xl text-sm break-word bg-red-100 text-red-600 transition duration-500">
@@ -191,9 +191,9 @@ function Convert(props: ConvertProps) {
             </ul>
           </div>
 
-          <Zip converted={convertedFiles()} />
+          <Zip converted={zipFiles()} />
         </>
-      )}
+      }
     </>
   )
 }
