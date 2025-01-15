@@ -1,5 +1,6 @@
 import { createSignal, createEffect, onCleanup, Show } from "solid-js"
 import Compressor from "compressorjs"
+import imageCompression from "browser-image-compression"
 import formatMessage from "../utils/formatMessage"
 import Zip from "./zip"
 
@@ -13,6 +14,7 @@ function Compress(props: CompressProps) {
   const [quality, setQuality] = createSignal<number>(0.8)
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
   const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string }[]>([])
+  const [loadingFiles, setLoadingFiles] = createSignal<string[]>([])
 
   const handleFormatChange = (e: Event) => {
     const select = e.target as HTMLSelectElement
@@ -36,6 +38,35 @@ function Compress(props: CompressProps) {
     }
   }
 
+  const compressPng = async (file: File, quality: number, mime: string) => {
+    try {
+      setLoadingFiles((prev) => [...prev, file.name])
+
+      const options = {
+        maxSizeMB: quality === 0.8 ? 3 : quality === 0.6 ? 2 : 1,
+        useWebWorker: true,
+        fileType: mime,
+        initialQuality: quality,
+      }
+
+      const compressedFile = await imageCompression(file, options)
+
+      const compressedBlob = new Blob([compressedFile], { type: "image/png" })
+      const compressedFileWithMetadata = new File(
+        [compressedBlob],
+        `${file.name.split(".")[0]}.png`,
+        { type: "image/png" }
+      )
+
+      return compressedFileWithMetadata
+    } catch (error) {
+      console.error(error)
+      throw new Error(`Kompresi gagal untuk ${file.name}`)
+    } finally {
+      setLoadingFiles((prev) => prev.filter((name) => name !== file.name))
+    }
+  }
+
   const compressImage = (file: File, downloadAll: boolean = false) => {
     const targetMimeType = format() === 'original' ? file.type : `image/${format()}`
     new Compressor(file, {
@@ -43,20 +74,26 @@ function Compress(props: CompressProps) {
       mimeType: targetMimeType,
       convertTypes: [],
       convertSize: Infinity,
-      success: (result) => {
+      success: async (result) => {
         const extension = format() === 'original' ? file.name.slice(file.name.lastIndexOf(".") + 1) : format()
         const compressedFile = new File([result], `${file.name.split(".")[0]}.${extension}`, {
           type: targetMimeType,
         })
+
+        let downloadFile = compressedFile
+
+        if (extension === 'png' || file.type.includes('png')) {
+          downloadFile = await compressPng(compressedFile, quality(), file.type)
+        }
   
         if (downloadAll) {
-          if (!zipFiles().some((item) => item.file.name === compressedFile.name)) {
-            setZipFiles((prev) => [...prev, { file: compressedFile, format: extension }])
+          if (!zipFiles().some((item) => item.file.name === downloadFile.name)) {
+            setZipFiles((prev) => [...prev, { file: downloadFile, format: extension }])
           }
         } else {
           const link = document.createElement("a")
-          link.href = URL.createObjectURL(compressedFile)
-          link.download = compressedFile.name
+          link.href = URL.createObjectURL(downloadFile)
+          link.download = downloadFile.name
           link.click()
           URL.revokeObjectURL(link.href)
         }
@@ -165,6 +202,7 @@ function Compress(props: CompressProps) {
                 const originalName = file.name.slice(0, file.name.lastIndexOf("."))
                 const selectedFormat = format() === 'original' ? file.name.slice(file.name.lastIndexOf(".") + 1) : format()
                 const displayedFileName = `${originalName}.${selectedFormat}`
+                const isLoading = loadingFiles().includes(file.name)
 
                 return (
                   <li class="flex justify-between items-center gap-6 py-3 break-word border-b border-slate-200 dark:border-slate-700 last:border-0">
@@ -177,54 +215,80 @@ function Compress(props: CompressProps) {
                       <span class="text-sm text-slate-700 dark:text-white">{displayedFileName}</span>
                     </div>
                     <div class="flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => compressImage(file)}
-                        class="ml-3 text-sm text-cyan-500 hover:text-cyan-600"
-                      >
+                      {isLoading ?
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
+                          class="animate-spin h-5 w-5 text-cyan-500"
                           fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
-                          <path d="M7 11l5 5l5 -5" />
-                          <path d="M12 4l0 12" />
-                        </svg>
-                        <span class="sr-only">Unduh</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(file)}
-                        class="ml-3 text-sm text-red-500 hover:text-red-700"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
                           viewBox="0 0 24 24"
-                          fill="none"
                           stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
                         >
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                          <path d="M4 7l16 0" />
-                          <path d="M10 11l0 6" />
-                          <path d="M14 11l0 6" />
-                          <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                          <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                          <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                          />
+                          <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8H4z"
+                          />
                         </svg>
-                        <span class="sr-only">Hapus</span>
-                      </button>
+                      :
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => compressImage(file)}
+                            class="ml-3 text-sm text-cyan-500 hover:text-cyan-600"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                              <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                              <path d="M7 11l5 5l5 -5" />
+                              <path d="M12 4l0 12" />
+                            </svg>
+                            <span class="sr-only">Unduh</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(file)}
+                            class="ml-3 text-sm text-red-500 hover:text-red-700"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                              <path d="M4 7l16 0" />
+                              <path d="M10 11l0 6" />
+                              <path d="M14 11l0 6" />
+                              <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                              <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                            </svg>
+                            <span class="sr-only">Hapus</span>
+                          </button>
+                        </>
+                      }
                     </div>
                   </li>
                 )
