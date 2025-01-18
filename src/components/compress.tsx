@@ -1,5 +1,4 @@
 import { createSignal, createEffect, onCleanup, Show } from "solid-js"
-import Compressor from "compressorjs"
 import imageCompression from "browser-image-compression"
 import formatMessage from "../utils/formatMessage"
 import Zip from "./zip"
@@ -13,7 +12,9 @@ function Compress(props: CompressProps) {
   const [quality, setQuality] = createSignal<number>(0.8)
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
   const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string; original: string }[]>([])
+  const [temp, setTemp] = createSignal<{ file: File; format: string; original: string }[]>([])
   const [loadingFiles, setLoadingFiles] = createSignal<string[]>([])
+  const [filePreviews, setFilePreviews] = createSignal<Map<string, string>>(new Map())
 
   const handleQualityChange = (e: Event) => {
     const select = e.target as HTMLSelectElement
@@ -21,76 +22,51 @@ function Compress(props: CompressProps) {
     if (value >= 0 && value <= 1) {
       setQuality(value)
       setZipFiles([])
+      setTemp([])
     } else {
       addError("Pilihan kualitas tidak valid")
     }
   }
 
-  const compressPng = async (file: File, quality: number, mime: string) => {
+  const compressImage = async (file: File, downloadAll: boolean = false) => {
     try {
       setLoadingFiles((prev) => [...prev, file.name])
 
       const options = {
-        maxSizeMB: quality === 0.8 ? 3 : quality === 0.6 ? 2 : 1,
+        maxSizeMB: quality() === 0.8 ? 3 : quality() === 0.6 ? 2 : 1,
         useWebWorker: true,
-        fileType: mime,
-        initialQuality: quality,
+        initialQuality: quality(),
       }
+
+      const original = file.name
+      const extension = file.name.slice(file.name.lastIndexOf(".") + 1)
 
       const compressedFile = await imageCompression(file, options)
 
-      const compressedBlob = new Blob([compressedFile], { type: "image/png" })
-      const compressedFileWithMetadata = new File(
-        [compressedBlob],
-        `${file.name.split(".")[0]}.png`,
-        { type: "image/png" }
+      const blob = new Blob([compressedFile], { type: file.type })
+      const downloadFile = new File(
+        [blob],
+        `${file.name.split(".")[0]}.${file.name.split(".").pop()}`,
+        { type: file.type }
       )
 
-      return compressedFileWithMetadata
+      if (downloadAll) {
+        if (!temp().some((item) => item.file.name === downloadFile.name)) {
+          setTemp((prev) => [...prev, { file: downloadFile, format: extension, original: original }])
+        }
+      } else {
+        const link = document.createElement("a")
+        link.href = URL.createObjectURL(downloadFile)
+        link.download = downloadFile.name
+        link.click()
+        URL.revokeObjectURL(link.href)
+      }
     } catch (error) {
       console.error(error)
-      throw new Error(`Kompresi gagal untuk ${file.name}`)
+      addError(`Kompresi gagal untuk ${file.name}`)
     } finally {
       setLoadingFiles((prev) => prev.filter((name) => name !== file.name))
     }
-  }
-
-  const compressImage = (file: File, downloadAll: boolean = false) => {
-    new Compressor(file, {
-      quality: quality(),
-      mimeType: file.type,
-      convertTypes: [],
-      convertSize: Infinity,
-      success: async (result) => {
-        const original = file.name
-        const extension = file.name.slice(file.name.lastIndexOf(".") + 1)
-        const compressedFile = new File([result], file.name, {
-          type: file.type,
-        })
-
-        let downloadFile = compressedFile
-
-        if (extension === 'png' || file.type.includes('png')) {
-          downloadFile = await compressPng(compressedFile, quality(), file.type)
-        }
-  
-        if (downloadAll) {
-          if (!zipFiles().some((item) => item.file.name === downloadFile.name)) {
-            setZipFiles((prev) => [...prev, { file: downloadFile, format: extension, original: original }])
-          }
-        } else {
-          const link = document.createElement("a")
-          link.href = URL.createObjectURL(downloadFile)
-          link.download = downloadFile.name
-          link.click()
-          URL.revokeObjectURL(link.href)
-        }
-      },
-      error: (err) => {
-        console.error(err.message)
-        addError(`Gagal mengompresi atau mengonversi *${file.name}*`)
-      },
-    })
   }
 
   const addError = (message: string) => {
@@ -102,6 +78,12 @@ function Compress(props: CompressProps) {
   const handleRemoveFile = (fileToRemove: File) => {
     props.setUploadedFiles(props.uploadedFiles.filter((file) => file.name !== fileToRemove.name))
     setZipFiles(zipFiles().filter((zip) => zip.original !== fileToRemove.name))
+
+    setFilePreviews((prev) => {
+      const newPreviews = new Map(prev)
+      newPreviews.delete(fileToRemove.name)
+      return newPreviews
+    })
   }
 
   createEffect(() => {
@@ -116,6 +98,28 @@ function Compress(props: CompressProps) {
   createEffect(() => {
     props.uploadedFiles.forEach((file) => {
       compressImage(file, true)
+    })
+    if (props.uploadedFiles.length >= temp().length) {
+      setZipFiles(temp())
+    }
+  })
+
+  createEffect(() => {
+    props.uploadedFiles.forEach((file) => {
+      const blobPreview = URL.createObjectURL(file)
+      setFilePreviews((prev) => {
+        const newPreviews = new Map(prev)
+        newPreviews.set(file.name, blobPreview)
+        return newPreviews
+      })
+    })
+  })
+
+  createEffect(() => {
+    onCleanup(() => {
+      filePreviews().forEach((blobPreview) => {
+        URL.revokeObjectURL(blobPreview)
+      })
     })
   })
 
@@ -166,12 +170,13 @@ function Compress(props: CompressProps) {
             <ul class="w-full mb-8">
               {props.uploadedFiles.map((file) => {
                 const isLoading = loadingFiles().includes(file.name)
+                const blobPreview = filePreviews().get(file.name)
 
                 return (
                   <li class="flex justify-between items-center gap-6 py-3 break-word border-b border-slate-200 dark:border-slate-700 last:border-0">
                     <div class="flex items-center gap-2">
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={blobPreview}
                         alt={file.name}
                         class="w-10 h-10 aspect-square object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
                       />
