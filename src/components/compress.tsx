@@ -10,22 +10,10 @@ type CompressProps = {
 }
 
 function Compress(props: CompressProps) {
-  const [format, setFormat] = createSignal<string>("original")
   const [quality, setQuality] = createSignal<number>(0.8)
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
-  const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string }[]>([])
+  const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string; original: string }[]>([])
   const [loadingFiles, setLoadingFiles] = createSignal<string[]>([])
-
-  const handleFormatChange = (e: Event) => {
-    const select = e.target as HTMLSelectElement
-    const value = select.value
-    if (['original', 'jpg', 'png', 'webp'].includes(value)) {
-      setFormat(value)
-      setZipFiles([])
-    } else {
-      addError("Pilihan ekstensi tidak valid")
-    }
-  }
 
   const handleQualityChange = (e: Event) => {
     const select = e.target as HTMLSelectElement
@@ -68,16 +56,16 @@ function Compress(props: CompressProps) {
   }
 
   const compressImage = (file: File, downloadAll: boolean = false) => {
-    const targetMimeType = format() === 'original' ? file.type : `image/${format()}`
     new Compressor(file, {
       quality: quality(),
-      mimeType: targetMimeType,
+      mimeType: file.type,
       convertTypes: [],
       convertSize: Infinity,
       success: async (result) => {
-        const extension = format() === 'original' ? file.name.slice(file.name.lastIndexOf(".") + 1) : format()
-        const compressedFile = new File([result], `${file.name.split(".")[0]}.${extension}`, {
-          type: targetMimeType,
+        const original = file.name
+        const extension = file.name.slice(file.name.lastIndexOf(".") + 1)
+        const compressedFile = new File([result], file.name, {
+          type: file.type,
         })
 
         let downloadFile = compressedFile
@@ -88,7 +76,7 @@ function Compress(props: CompressProps) {
   
         if (downloadAll) {
           if (!zipFiles().some((item) => item.file.name === downloadFile.name)) {
-            setZipFiles((prev) => [...prev, { file: downloadFile, format: extension }])
+            setZipFiles((prev) => [...prev, { file: downloadFile, format: extension, original: original }])
           }
         } else {
           const link = document.createElement("a")
@@ -103,7 +91,7 @@ function Compress(props: CompressProps) {
         addError(`Gagal mengompresi atau mengonversi *${file.name}*`)
       },
     })
-  }  
+  }
 
   const addError = (message: string) => {
     const currentTime = Date.now()
@@ -113,6 +101,7 @@ function Compress(props: CompressProps) {
 
   const handleRemoveFile = (fileToRemove: File) => {
     props.setUploadedFiles(props.uploadedFiles.filter((file) => file.name !== fileToRemove.name))
+    setZipFiles(zipFiles().filter((zip) => zip.original !== fileToRemove.name))
   }
 
   createEffect(() => {
@@ -150,31 +139,8 @@ function Compress(props: CompressProps) {
 
           <fieldset class="pt-2 flex flex-col gap-6">
             <label class="relative block w-full rounded-lg bg-white">
-              <select onChange={handleFormatChange} class="input relative z-[1] pr-10 bg-transparent appearance-none">
-                <option value="original">Ekstensi Tidak Diubah</option>
-                <option value="jpg">JPG</option>
-                <option value="png">PNG</option>
-                <option value="webp">WEBP</option>
-              </select>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="absolute top-0 bottom-0 right-3.5 my-auto w-5 h-5 text-slate-400"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <path d="M6 9l6 6l6 -6" />
-              </svg>
-            </label>
-            <label class="relative block w-full rounded-lg bg-white">
               <select onChange={handleQualityChange} class="input relative z-[1] pr-10 bg-transparent appearance-none">
-                <option value="0.8">Kualitas Tinggi</option>
+                <option value="0.8">Kualitas Bagus</option>
                 <option value="0.6">Kualitas Sedang</option>
                 <option value="0.3">Kualitas Rendah</option>
               </select>
@@ -199,9 +165,6 @@ function Compress(props: CompressProps) {
           <div class="w-full mt-8">
             <ul class="w-full mb-8">
               {props.uploadedFiles.map((file) => {
-                const originalName = file.name.slice(0, file.name.lastIndexOf("."))
-                const selectedFormat = format() === 'original' ? file.name.slice(file.name.lastIndexOf(".") + 1) : format()
-                const displayedFileName = `${originalName}.${selectedFormat}`
                 const isLoading = loadingFiles().includes(file.name)
 
                 return (
@@ -212,7 +175,7 @@ function Compress(props: CompressProps) {
                         alt={file.name}
                         class="w-10 h-10 aspect-square object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
                       />
-                      <span class="text-sm text-slate-700 dark:text-white">{displayedFileName}</span>
+                      <span class="text-sm text-slate-700 dark:text-white">{file.name}</span>
                     </div>
                     <div class="flex items-center">
                       {isLoading ?

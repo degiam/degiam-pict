@@ -10,7 +10,7 @@ type ConvertProps = {
 function Convert(props: ConvertProps) {
   const [format, setFormat] = createSignal<string>("jpg")
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
-  const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string }[]>([])
+  const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string; original: string }[]>([])
 
   const handleFormatChange = (e: Event) => {
     const select = e.target as HTMLSelectElement
@@ -35,6 +35,7 @@ function Convert(props: ConvertProps) {
         canvas.height = img.height
         ctx.drawImage(img, 0, 0)
 
+        const original = file.name
         const originalName = file.name.slice(0, file.name.lastIndexOf("."))
         const finalFileName = `${originalName}.${selectedFormat}`
 
@@ -51,14 +52,14 @@ function Convert(props: ConvertProps) {
         const blob = new Blob([ia], { type: `image/${selectedFormat}` })
 
         if (downloadAll) {
-          const convertedFile = new File([blob], finalFileName, { type: `image/${selectedFormat}` })
+          const downloadFile = new File([blob], finalFileName, { type: `image/${selectedFormat}` })
 
           const isDuplicate = zipFiles().some(
-            (item) => item.file.name === convertedFile.name
+            (item) => item.file.name === downloadFile.name
           )
 
           if (!isDuplicate) {
-            setZipFiles((prev) => [...prev, { file: convertedFile, format: selectedFormat }])
+            setZipFiles((prev) => [...prev, { file: downloadFile, format: selectedFormat, original: original }])
           }
         } else {
           const link = document.createElement("a")
@@ -87,6 +88,11 @@ function Convert(props: ConvertProps) {
     const currentTime = Date.now()
     const newError = { message, timeout: currentTime + 5000 }
     setErrorFile((prev) => [...prev, newError])
+  }
+
+  const handleRemoveFile = (fileToRemove: File) => {
+    props.setUploadedFiles(props.uploadedFiles.filter((file) => file.name !== fileToRemove.name))
+    setZipFiles(zipFiles().filter((zip) => zip.original !== fileToRemove.name))
   }
 
   createEffect(() => {
@@ -183,6 +189,31 @@ function Convert(props: ConvertProps) {
                           <path d="M12 4l0 12" />
                         </svg>
                         <span class="sr-only">Unduh</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(file)}
+                        class="ml-3 text-sm text-red-500 hover:text-red-700"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M4 7l16 0" />
+                          <path d="M10 11l0 6" />
+                          <path d="M14 11l0 6" />
+                          <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                          <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                        </svg>
+                        <span class="sr-only">Hapus</span>
                       </button>
                     </div>
                   </li>

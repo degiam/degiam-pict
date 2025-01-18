@@ -12,7 +12,7 @@ type DropzoneProps = {
 
 function Dropzone(props: DropzoneProps) {
   const [isDragActive, setIsDragActive] = createSignal(false)
-  const [activeMode, setActiveMode] = createSignal<"compress" | "convert">("compress")
+  const [activeMode, setActiveMode] = createSignal<"convert" | "compress">("convert")
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
   const [isFadingOut, setIsFadingOut] = createSignal(false)
   let dragCounter = 0
@@ -171,18 +171,7 @@ function Dropzone(props: DropzoneProps) {
           </Popover>
         </div>
 
-        <div class="sr-only flex justify-center gap-2 mb-8">
-          <button
-            type="button"
-            onClick={() => setActiveMode("compress")}
-            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:dark:hover:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
-              activeMode() === "compress"
-                ? "active"
-                : ""
-            }`}
-          >
-            Kompresi
-          </button>
+        <div class="flex justify-center gap-2 mb-8">
           <button
             type="button"
             onClick={() => setActiveMode("convert")}
@@ -193,6 +182,17 @@ function Dropzone(props: DropzoneProps) {
             }`}
           >
             Konversi
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode("compress")}
+            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:dark:hover:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
+              activeMode() === "compress"
+                ? "active"
+                : ""
+            }`}
+          >
+            Kompresi
           </button>
         </div>
 
@@ -250,8 +250,8 @@ function Dropzone(props: DropzoneProps) {
         </Show>
 
         <div class="mt-8">
-          <Show when={activeMode() === "compress"}>{props.children?.[0]}</Show>
-          <Show when={activeMode() === "convert"}>{props.children?.[1]}</Show>
+          <Show when={activeMode() === "convert"}>{props.children?.[0]}</Show>
+          <Show when={activeMode() === "compress"}>{props.children?.[1]}</Show>
         </div>
 
         <Built />
