@@ -12,7 +12,7 @@ type DropzoneProps = {
 
 function Dropzone(props: DropzoneProps) {
   const [isDragActive, setIsDragActive] = createSignal(false)
-  const [activeMode, setActiveMode] = createSignal<"convert" | "compress">("convert")
+  const [activeMode, setActiveMode] = createSignal<"convert" | "compress" | "removebg">("convert")
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
   const [isFadingOut, setIsFadingOut] = createSignal(false)
   let dragCounter = 0
@@ -194,6 +194,17 @@ function Dropzone(props: DropzoneProps) {
           >
             Kompresi
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode("removebg")}
+            class={`min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white [&.active]:dark:hover:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 [&.active]:dark:bg-cyan-600 ${
+              activeMode() === "removebg"
+                ? "active"
+                : ""
+            }`}
+          >
+            Hapus Bg
+          </button>
         </div>
 
         <div
@@ -225,7 +236,7 @@ function Dropzone(props: DropzoneProps) {
           />
           <div class="text-center py-4">
             <h2 class="text-xl font-semibold text-slate-800 dark:text-white">
-              Tarik dan Taruh Gambar Disini
+              Tarik & Taruh Gambar Disini
             </h2>
             <p class="text-sm text-slate-400 dark:text-slate-600 mt-2">
               atau klik untuk telusuri
@@ -252,6 +263,7 @@ function Dropzone(props: DropzoneProps) {
         <div class="mt-8">
           <Show when={activeMode() === "convert"}>{props.children?.[0]}</Show>
           <Show when={activeMode() === "compress"}>{props.children?.[1]}</Show>
+          <Show when={activeMode() === "removebg"}>{props.children?.[2]}</Show>
         </div>
 
         <Built />

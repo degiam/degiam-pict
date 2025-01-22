@@ -2,6 +2,7 @@ import { createSignal, onCleanup, onMount } from 'solid-js'
 import Dropzone from "./components/dropzone"
 import Compress from "./components/compress"
 import Convert from "./components/convert"
+import RemoveBg from "./components/removebg"
 
 function App() {
   const [isStandalone, setIsStandalone] = createSignal<boolean>(false)
@@ -72,6 +73,7 @@ function App() {
       <Dropzone uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles}>
         <Convert uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
         <Compress uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
+        <RemoveBg uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
       </Dropzone>
     </main>
   )
