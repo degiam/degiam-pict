@@ -137,7 +137,7 @@ function Convert(props: ConvertProps) {
 
           <fieldset class="pt-2">
             <label class="relative block w-full rounded-lg bg-white">
-              <select onChange={handleFormatChange} class="input relative z-[1] pr-10 bg-transparent appearance-none">
+              <select onChange={handleFormatChange} class="input relative z-1 pr-10 bg-transparent appearance-none">
                 <option value="jpg">JPG</option>
                 <option value="png">PNG</option>
                 <option value="webp">WEBP</option>

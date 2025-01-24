@@ -1,7 +1,7 @@
 {
   "name": "degiam-pict",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,14 +11,13 @@
   "dependencies": {
     "browser-image-compression": "^2.0.2",
     "jszip": "^3.10.1",
-    "solid-js": "^1.9.3"
+    "solid-js": "^1.9.4"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.5",
+    "@tailwindcss/postcss": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "~5.7.3",
+    "vite": "^6.0.11",
     "vite-plugin-solid": "^2.11.0"
   }
 }

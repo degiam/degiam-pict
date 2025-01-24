@@ -143,7 +143,7 @@ function Compress(props: CompressProps) {
 
           <fieldset class="pt-2 flex flex-col gap-6">
             <label class="relative block w-full rounded-lg bg-white">
-              <select onChange={handleQualityChange} class="input relative z-[1] pr-10 bg-transparent appearance-none">
+              <select onChange={handleQualityChange} class="input relative z-1 pr-10 bg-transparent appearance-none">
                 <option value="0.8">Kualitas Bagus</option>
                 <option value="0.6">Kualitas Sedang</option>
                 <option value="0.3">Kualitas Rendah</option>
