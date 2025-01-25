@@ -15,7 +15,9 @@ function Dropzone(props: DropzoneProps) {
   const [activeMode, setActiveMode] = createSignal<"convert" | "compress" | "removebg">("convert")
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
   const [isFadingOut, setIsFadingOut] = createSignal(false)
+  const [menuScrolled, setMenuScrolled] = createSignal(false)
   const menuRefs: any = []
+
   let dragCounter = 0
   let fileInputRef: HTMLInputElement | undefined
 
@@ -113,6 +115,12 @@ function Dropzone(props: DropzoneProps) {
   }
 
   createEffect(() => {
+    const body = document.querySelector('body') as HTMLElement
+    const container = document.querySelector('.menu-container') as HTMLDivElement
+    if (container.clientWidth > body.clientWidth) {
+      setMenuScrolled(true)
+    }
+
     const interval = setInterval(() => {
       const currentTime = Date.now()
       setErrorFile((prev) => prev.filter((error: any) => error.timeout > currentTime))
@@ -178,7 +186,7 @@ function Dropzone(props: DropzoneProps) {
         </div>
 
         <div class="mb-8 -mx-6 px-6 overflow-auto scrollbar-none">
-          <div class="flex justify-center gap-2 w-max mx-auto max-md:[&_button:last-child]:mr-6">
+          <div class={`menu-container max-md:[&.active_button:last-child]:mr-6 ${menuScrolled() ? "active" : ""} flex justify-center gap-2 w-max mx-auto`}>
             <button
               type="button"
               ref={el => menuRefs[0] = el}
