@@ -8,6 +8,7 @@ type DropzoneProps = {
   children?: JSX.Element[];
   uploadedFiles: File[];
   setUploadedFiles: (files: File[]) => void;
+  ios: boolean;
 }
 
 function Dropzone(props: DropzoneProps) {
@@ -186,7 +187,7 @@ function Dropzone(props: DropzoneProps) {
         </div>
 
         <div class="mb-8 -mx-6 px-6 overflow-auto scrollbar-none">
-          <div class={`menu-container max-md:[&.active_button:last-child]:mr-6 ${menuScrolled() ? "active" : ""} flex justify-center gap-2 w-max mx-auto`}>
+          <div class={`menu-container ${props.ios ? "max-md:[&.active_button:last-child]:mr-6" : ""} ${menuScrolled() ? "active" : ""} flex justify-center gap-2 w-max mx-auto`}>
             <button
               type="button"
               ref={el => menuRefs[0] = el}

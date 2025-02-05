@@ -7,6 +7,7 @@ import RemoveBg from "./components/removebg"
 function App() {
   const [isStandalone, setIsStandalone] = createSignal<boolean>(false)
   const [isMobile, setIsMobile] = createSignal<boolean>(false)
+  const [isIos, setIsIos] = createSignal<boolean>(false)
 
   const updateTheme = (isDarkMode: boolean) => {
     if (isDarkMode) {
@@ -56,6 +57,18 @@ function App() {
     })
   })
 
+  onMount(() => {
+    const userAgent = window.navigator.userAgent
+    const isTouchDevice = navigator.maxTouchPoints && navigator.maxTouchPoints > 2
+
+    if (
+      /iPad|iPhone|iPod/.test(userAgent) ||
+      (userAgent.includes("Mac") && isTouchDevice)
+    ) {
+      setIsIos(true)
+    }
+  })
+
   const mainClass = (): string => {
     if (isStandalone()) {
       return isMobile()
@@ -70,7 +83,7 @@ function App() {
   return (
     <main class={mainClass()}>
       <h1 class="sr-only">KiePict by Degiam</h1>
-      <Dropzone uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles}>
+      <Dropzone uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} ios={isIos()}>
         <Convert uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
         <Compress uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
         <RemoveBg uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
