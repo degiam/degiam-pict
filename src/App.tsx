@@ -5,7 +5,7 @@ import Convert from "./components/convert"
 import RemoveBg from "./components/removebg"
 
 function App() {
-  const [isStandalone, setIsStandalone] = createSignal<boolean>(false)
+  const [isChildren, setIsChildren] = createSignal<boolean>(false)
   const [isMobile, setIsMobile] = createSignal<boolean>(false)
   const [isIos, setIsIos] = createSignal<boolean>(false)
 
@@ -45,7 +45,7 @@ function App() {
   onMount(() => {
     const handleScreenSizeMessage = (event: MessageEvent) => {
       if (event.data?.type === "screen-size") {
-        setIsStandalone(true)
+        setIsChildren(true)
         setIsMobile(event.data.isMobile)
       }
     }
@@ -70,7 +70,7 @@ function App() {
   })
 
   const mainClass = (): string => {
-    if (isStandalone()) {
+    if (isChildren()) {
       return isMobile()
         ? "max-md:[&_.main-layout]:pb-24"
         : "md:[&_.main-layout]:pt-24"
@@ -82,7 +82,9 @@ function App() {
 
   return (
     <main class={mainClass()}>
-      <h1 class="sr-only">KiePict by Degiam</h1>
+      {!isChildren() &&
+        <h1 class="sr-only">KiePict by Degiam</h1>
+      }
       <Dropzone uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} ios={isIos()}>
         <Convert uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
         <Compress uploadedFiles={uploadedFiles()} setUploadedFiles={setUploadedFiles} />
