@@ -15,24 +15,30 @@ function RemoveBg(props: RemoveBgProps) {
   // const [temp, setTemp] = createSignal<{ file: File; format: string; original: string }[]>([])
   const [loadingFiles, setLoadingFiles] = createSignal<string[]>([])
   const [filePreviews, setFilePreviews] = createSignal<Map<string, string>>(new Map())
+  const [isLoading, setIsLoading] = createSignal<boolean>(false);
+  const [errorUrl, setErrorUrl] = createSignal<string | null>(null);
+
+  const processing = async (url: string, title: string) => {
+    const result: any = await removeBg(encodeURIComponent(url))
+    if (result) {
+      const response = await fetch(result.data.bg_removed)
+      const blob = await response.blob()
+      const link = document.createElement("a")
+      link.href = URL.createObjectURL(blob)
+      link.download = title
+      link.click()
+      URL.revokeObjectURL(link.href)
+    } else {
+      addError(`Hapus latar belakang gagal untuk ${title}`)
+    }
+  }
 
   const removeBgImage = async (file: File, downloadAll: boolean = false) => {
     try {
       setLoadingFiles((prev) => [...prev, file.name])
 
       const upload: any = await uploadTempFile(file)
-      const result: any = await removeBg(encodeURIComponent(upload))
-      if (result) {
-        const response = await fetch(result.data.bg_removed)
-        const blob = await response.blob()
-        const link = document.createElement("a")
-        link.href = URL.createObjectURL(blob)
-        link.download = file.name
-        link.click()
-        URL.revokeObjectURL(link.href)
-      } else {
-        addError(`Hapus latar belakang gagal untuk ${file.name}`)
-      }
+      processing(upload, file.name)
 
       console.log(downloadAll)
 
@@ -116,8 +122,97 @@ function RemoveBg(props: RemoveBgProps) {
     })
   })
 
+  const handleRemoveBgByUrl = async (e: SubmitEvent) => {
+    e.preventDefault()
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement)
+    const url = formData.get("url_image") as string
+
+    setIsLoading(true)
+
+    try {
+      const parsedUrl = new URL(url)
+
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        setErrorUrl("URL harus dimulai dengan http atau https")
+      } else if (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") {
+        setErrorUrl("URL tidak boleh berasal dari localhost")
+      } else {
+        await processing(url, "KiePict")
+      }
+    } catch (error) {
+      addError((error as Error).message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <>
+      <div class="text-slate-400 dark:text-slate-600 text-sm text-center mb-8">atau masukkan URL gambar</div>
+      <form onSubmit={handleRemoveBgByUrl} class="relative">
+        <fieldset class="flex flex-col gap-2 h-full">
+          <label class="sr-only" for="url_image">URL</label>
+          <input
+            id="url_image"
+            name="url_image"
+            type="url"
+            placeholder="https://"
+            class={`input pr-14 ${errorUrl() ? "border-red-500" : ""}`}
+          />
+          {errorUrl &&
+            <p class="text-xs text-red-500">{errorUrl()}</p>
+          }
+        </fieldset>
+        <fieldset class="absolute top-1.5 right-1.5">
+          <button
+            type="submit"
+            class={`h-full w-full p-2 rounded-lg transition font-bold relative flex items-center justify-center gap-2 text-white border border-cyan-500 hover:border-cyan-600 bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-500 ${isLoading() ? "pointer-events-none" : ""}`}
+          >
+            <span class="sr-only">Kirim</span>
+            {isLoading() ?
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="animate-spin h-5 w-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <circle
+                  class="opacity-50"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                />
+                <path
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+            :
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-white"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
+                <path d="M6.5 12h14.5" />
+              </svg>
+            }
+          </button>
+        </fieldset>
+      </form>
+
       {props.uploadedFiles.length > 0 && (
         <>
           <Show when={errorFile().length > 0}>
