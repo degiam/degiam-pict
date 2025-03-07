@@ -17,17 +17,23 @@ function RemoveBg(props: RemoveBgProps) {
   const [filePreviews, setFilePreviews] = createSignal<Map<string, string>>(new Map())
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
   const [errorUrl, setErrorUrl] = createSignal<string | null>(null);
+  const [openNewTab, setOpenNewTab] = createSignal<boolean>(false);
 
   const processing = async (url: string, title: string) => {
     const result: any = await removeBg(encodeURIComponent(url))
     if (result) {
-      const response = await fetch(result.data.bg_removed)
-      const blob = await response.blob()
-      const link = document.createElement("a")
-      link.href = URL.createObjectURL(blob)
-      link.download = title
-      link.click()
-      URL.revokeObjectURL(link.href)
+      const imageUrl = result.data.bg_removed
+      if (openNewTab()) {
+        window.open(imageUrl, "_blank")
+      } else {
+        const response = await fetch(imageUrl)
+        const blob = await response.blob()
+        const link = document.createElement("a")
+        link.href = URL.createObjectURL(blob)
+        link.download = title
+        link.click()
+        URL.revokeObjectURL(link.href)
+      }
     } else {
       addError(`Hapus latar belakang gagal untuk ${title}`)
     }
@@ -151,7 +157,7 @@ function RemoveBg(props: RemoveBgProps) {
     <>
       <div class="text-slate-400 dark:text-slate-600 text-sm text-center mb-8">atau masukkan URL gambar</div>
       <form onSubmit={handleRemoveBgByUrl} class="relative">
-        <fieldset class="flex flex-col gap-2 h-full">
+        <fieldset class="flex flex-col gap-2">
           <label class="sr-only" for="url_image">URL</label>
           <input
             id="url_image"
@@ -164,10 +170,27 @@ function RemoveBg(props: RemoveBgProps) {
             <p class="text-xs text-red-500">{errorUrl()}</p>
           }
         </fieldset>
+        <fieldset class="flex gap-2">
+          <input
+            id="open_new_tab"
+            type="checkbox"
+            onChange={(e) => setOpenNewTab(e.target.checked)}
+            class="sr-only peer"
+          />
+          <div class="w-4 h-4 flex items-center justify-center border border-gray-400/50 dark:border-gray-500 rounded-sm bg-slate-100 dark:bg-slate-700/70 peer-checked:bg-cyan-500 dark:peer-checked:bg-cyan-500 peer-checked:border-cyan-500 peer-checked:text-white dark:peer-checked:text-slate-800 cursor-pointer">
+            {openNewTab() &&
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"  stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M5 12l5 5l10 -10" />
+              </svg>
+            }
+          </div>
+          <label class="text-slate-400 dark:text-slate-500 text-xs cursor-pointer" for="open_new_tab">Buka pada tab baru</label>
+        </fieldset>
         <fieldset class="absolute top-1.5 right-1.5">
           <button
             type="submit"
-            class={`h-full w-full p-2 rounded-lg transition font-bold relative flex items-center justify-center gap-2 text-white border border-cyan-500 hover:border-cyan-600 bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-500 ${isLoading() ? "pointer-events-none" : ""}`}
+            class={`h-full w-full p-2 rounded-lg transition font-bold relative flex items-center justify-center gap-2 text-white border border-cyan-500 hover:border-cyan-600 bg-cyan-500 hover:bg-cyan-600 ${isLoading() ? "pointer-events-none" : ""}`}
           >
             <span class="sr-only">Kirim</span>
             {isLoading() ?
