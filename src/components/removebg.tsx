@@ -19,11 +19,11 @@ function RemoveBg(props: RemoveBgProps) {
   const [errorUrl, setErrorUrl] = createSignal<string | null>(null);
   const [openNewTab, setOpenNewTab] = createSignal<boolean>(false);
 
-  const processing = async (url: string, title: string) => {
+  const processing = async (url: string, title: string, form: boolean = true) => {
     const result: any = await removeBg(encodeURIComponent(url))
     if (result) {
       const imageUrl = result.data.bg_removed
-      if (openNewTab()) {
+      if (openNewTab() && form) {
         window.open(imageUrl, "_blank")
       } else {
         const response = await fetch(imageUrl)
@@ -44,7 +44,7 @@ function RemoveBg(props: RemoveBgProps) {
       setLoadingFiles((prev) => [...prev, file.name])
 
       const upload: any = await uploadTempFile(file)
-      processing(upload, file.name)
+      processing(upload, file.name, false)
 
       console.log(downloadAll)
 
