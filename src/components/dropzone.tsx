@@ -212,7 +212,7 @@ function Dropzone(props: DropzoneProps) {
             >
               Kompresi
             </button>
-            <button
+            {/* <button
               type="button"
               ref={el => menuRefs[2] = el}
               onClick={() => handleMenuActive("removebg", 2)}
@@ -223,7 +223,15 @@ function Dropzone(props: DropzoneProps) {
               }`}
             >
               Hapus Latar Belakang
-            </button>
+            </button> */}
+            <a
+              href="https://www.photoroom.com/tools/background-remover"
+              rel="noopener noreferrer"
+              target="_blank"
+              class="whitespace-nowrap min-w-24 px-3.5 py-2.5 rounded-lg transition border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 [&.active]:pointer-events-none [&.active]:text-white dark:[&.active]:hover:text-white [&.active]:border-cyan-500 [&.active]:bg-cyan-500 dark:[&.active]:bg-cyan-600"
+            >
+              Hapus Latar Belakang
+            </a>
           </div>
         </div>
 
