@@ -9,7 +9,10 @@ export async function uploadTempFile(file: any): Promise<string> {
 
   const result = await response.json()
   if (response.ok) {
-    return result.data.url
+    const domain = "tmpfiles.org/"
+    const id = result.data.url.split(domain)[1]
+    const url = `${domain}dl/${id}`
+    return url
   } else {
     throw new Error(result.message || "Gagal mengunggah file")
   }
