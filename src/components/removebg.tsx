@@ -2,7 +2,6 @@ import { createSignal, createEffect, onCleanup, Show } from "solid-js"
 import { removeBg } from "../api/zest";
 import { uploadTempFile } from "../api/tmpfiles";
 import formatMessage from "../utils/formatMessage"
-// import Zip from "./zip"
 
 type RemoveBgProps = {
   uploadedFiles: File[];
@@ -12,7 +11,6 @@ type RemoveBgProps = {
 function RemoveBg(props: RemoveBgProps) {
   const [errorFile, setErrorFile] = createSignal<{ message: string; timeout: number }[]>([])
   const [zipFiles, setZipFiles] = createSignal<{ file: File; format: string; original: string }[]>([])
-  // const [temp, setTemp] = createSignal<{ file: File; format: string; original: string }[]>([])
   const [loadingFiles, setLoadingFiles] = createSignal<string[]>([])
   const [filePreviews, setFilePreviews] = createSignal<Map<string, string>>(new Map())
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
@@ -39,33 +37,12 @@ function RemoveBg(props: RemoveBgProps) {
     }
   }
 
-  const removeBgImage = async (file: File, downloadAll: boolean = false) => {
+  const removeBgImage = async (file: File) => {
     try {
       setLoadingFiles((prev) => [...prev, file.name])
 
       const upload: any = await uploadTempFile(file)
       processing(upload, file.name, false)
-
-      console.log(downloadAll)
-
-      // const blob = new Blob([removeBgFile], { type: file.type })
-      // const downloadFile = new File(
-      //   [blob],
-      //   `${file.name.split(".")[0]}.${file.name.split(".").pop()}`,
-      //   { type: file.type }
-      // )
-
-      // if (downloadAll) {
-      //   if (!temp().some((item) => item.file.name === downloadFile.name)) {
-      //     setTemp((prev) => [...prev, { file: downloadFile, format: 'png', original: downloadFile.name }])
-      //   }
-      // } else {
-      //   const link = document.createElement("a")
-      //   link.href = URL.createObjectURL(downloadFile)
-      //   link.download = downloadFile.name
-      //   link.click()
-      //   URL.revokeObjectURL(link.href)
-      // }
     } catch (error) {
       console.error(error)
       addError(`Hapus latar belakang gagal untuk ${file.name}`)
@@ -99,15 +76,6 @@ function RemoveBg(props: RemoveBgProps) {
 
     onCleanup(() => clearInterval(interval))
   })
-
-  // createEffect(() => {
-  //   props.uploadedFiles.forEach((file) => {
-  //     removeBgImage(file, true)
-  //   })
-  //   if (props.uploadedFiles.length >= temp().length) {
-  //     setZipFiles(temp())
-  //   }
-  // })
 
   createEffect(() => {
     props.uploadedFiles.forEach((file) => {
@@ -349,8 +317,6 @@ function RemoveBg(props: RemoveBgProps) {
               })}
             </ul>
           </div>
-
-          {/* <Zip compressed={zipFiles()} /> */}
         </>
       )}
     </>
