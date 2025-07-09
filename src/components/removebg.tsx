@@ -20,7 +20,7 @@ function RemoveBg(props: RemoveBgProps) {
   const processing = async (url: string, title: string, form: boolean = true) => {
     const result: any = await removeBg(encodeURIComponent(url))
     if (result) {
-      const imageUrl = result.data.bg_removed
+      const imageUrl = result.images.preview
       if (openNewTab() && form) {
         window.open(imageUrl, "_blank")
       } else {
